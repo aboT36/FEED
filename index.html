@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>حاسبة الأعلاف للحيوانات</title>
+  <style>
+    body { font-family: Arial; direction: rtl; margin: 40px; }
+    label, select, input, button { margin: 10px 0; display: block; width: 300px; }
+    button { padding: 10px; }
+    #result { margin-top: 30px; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+  <h2>حاسبة الطاقة والبروتين اليومية</h2>
+
+  <label for="animal">نوع الحيوان:</label>
+  <select id="animal">
+    <option value="cow">بقرة</option>
+    <option value="buffalo">جاموس</option>
+    <option value="sheep">غنم</option>
+  </select>
+
+  <label for="weight">وزن الحيوان (كجم):</label>
+  <input type="number" id="weight">
+
+  <label for="output">إنتاج الحليب (لتر/يوم):</label>
+  <input type="number" id="milk">
+
+  <label for="feedType">نوع العلف:</label>
+  <select id="feedType">
+    <option value="cornsilage">سيلاج الذرة</option>
+    <option value="barley">تبن القمح</option>
+    <option value="dates">بلح</option>
+    <option value="hay">دريس</option>
+    <option value="concentrate">علف مركز 16%</option>
+  </select>
+
+  <label for="feedAmount">كمية العلف (كجم/يوم):</label>
+  <input type="number" id="feedAmount">
+
+  <button onclick="calculate()">احسب الاحتياج والتغطية</button>
+
+  <div id="result"></div>
+
+  <script>
+    const feedData = {
+      cornsilage: { ME: 2.5, CP: 8 },
+      barley: { ME: 1.5, CP: 4 },
+      dates: { ME: 2.8, CP: 5 },
+      hay: { ME: 1.8, CP: 12 },
+      concentrate: { ME: 3.0, CP: 16 }
+    };
+
+    function calculate() {
+      const animal = document.getElementById("animal").value;
+      const weight = parseFloat(document.getElementById("weight").value);
+      const milk = parseFloat(document.getElementById("milk").value);
+      const feedType = document.getElementById("feedType").value;
+      const feedAmount = parseFloat(document.getElementById("feedAmount").value);
+
+      // احتياجات تقديرية مبنية على NRC (تقريبية):
+      const meReq = 0.08 * Math.pow(weight, 0.75) + milk * 0.7;  // طاقة
+      const cpReq = 1.2 + milk * 0.09;  // بروتين خام (كجم)
+
+      const feed = feedData[feedType];
+      const totalME = feed.ME * feedAmount;
+      const totalCP = (feed.CP / 100) * feedAmount;
+
+      document.getElementById("result").innerHTML = `
+        <p>💡 الاحتياج اليومي للطاقة (ME): <strong>${meReq.toFixed(2)} Mcal</strong></p>
+        <p>💡 الاحتياج اليومي للبروتين الخام (CP): <strong>${cpReq.toFixed(2)} كجم</strong></p>
+        <p>🌾 ما توفره العليقة:</p>
+        <p>🔹 طاقة: ${totalME.toFixed(2)} Mcal (${((totalME / meReq) * 100).toFixed(1)}%)</p>
+        <p>🔹 بروتين: ${totalCP.toFixed(2)} كجم (${((totalCP / cpReq) * 100).toFixed(1)}%)</p>
+      `;
+    }
+  </script>
+
+</body>
+</html>
