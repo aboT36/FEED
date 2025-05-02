@@ -2,79 +2,124 @@
 <html lang="ar">
 <head>
   <meta charset="UTF-8">
-  <title>حاسبة الأعلاف للحيوانات</title>
+  <title>حاسبة الأعلاف TMR</title>
   <style>
-    body { font-family: Arial; direction: rtl; margin: 40px; }
-    label, select, input, button { margin: 10px 0; display: block; width: 300px; }
+    body { font-family: Arial; direction: rtl; margin: 40px; max-width: 600px; }
+    label, select, input, button { margin: 10px 0; display: block; width: 100%; }
     button { padding: 10px; }
-    #result { margin-top: 30px; font-weight: bold; }
+    #tmrSection { display: none; }
+    #milkSection { display: none; }
+    #result { margin-top: 30px; font-weight: bold; white-space: pre-line; }
   </style>
 </head>
 <body>
 
-  <h2>حاسبة الطاقة والبروتين اليومية</h2>
+  <h2>حاسبة احتياجات البروتين والطاقة والعليقة (TMR)</h2>
 
-  <label for="animal">نوع الحيوان:</label>
-  <select id="animal">
+  <label>نوع الحيوان:</label>
+  <select id="animal" onchange="updateUI()">
     <option value="cow">بقرة</option>
     <option value="buffalo">جاموس</option>
     <option value="sheep">غنم</option>
   </select>
 
-  <label for="weight">وزن الحيوان (كجم):</label>
-  <input type="number" id="weight">
-
-  <label for="output">إنتاج الحليب (لتر/يوم):</label>
-  <input type="number" id="milk">
-
-  <label for="feedType">نوع العلف:</label>
-  <select id="feedType">
-    <option value="cornsilage">سيلاج الذرة</option>
-    <option value="barley">تبن القمح</option>
-    <option value="dates">بلح</option>
-    <option value="hay">دريس</option>
-    <option value="concentrate">علف مركز 16%</option>
+  <label>الجنس:</label>
+  <select id="gender" onchange="updateUI()">
+    <option value="male">ذكر</option>
+    <option value="female">أنثى</option>
   </select>
 
-  <label for="feedAmount">كمية العلف (كجم/يوم):</label>
-  <input type="number" id="feedAmount">
+  <div id="milkStatus">
+    <label>هل تنتج الحليب؟</label>
+    <select id="producingMilk" onchange="toggleMilkInput()">
+      <option value="no">لا</option>
+      <option value="yes">نعم</option>
+    </select>
+  </div>
 
-  <button onclick="calculate()">احسب الاحتياج والتغطية</button>
+  <div id="milkSection">
+    <label>كمية الحليب المنتجة (لتر/يوم):</label>
+    <input type="number" id="milk">
+  </div>
+
+  <label>وزن الحيوان (كجم):</label>
+  <input type="number" id="weight">
+
+  <label>هل تود تكوين عليقة بنظام TMR؟</label>
+  <select id="tmr" onchange="toggleTMR()">
+    <option value="no">لا</option>
+    <option value="yes">نعم</option>
+  </select>
+
+  <div id="tmrSection">
+    <p>🔽 حساب العليقة سيتم بعد الحساب الأساسي.</p>
+  </div>
+
+  <button onclick="calculate()">احسب</button>
 
   <div id="result"></div>
 
   <script>
-    const feedData = {
-      cornsilage: { ME: 2.5, CP: 8 },
-      barley: { ME: 1.5, CP: 4 },
-      dates: { ME: 2.8, CP: 5 },
-      hay: { ME: 1.8, CP: 12 },
-      concentrate: { ME: 3.0, CP: 16 }
-    };
+    function updateUI() {
+      const gender = document.getElementById("gender").value;
+      document.getElementById("milkStatus").style.display = gender === "female" ? "block" : "none";
+      if (gender !== "female") {
+        document.getElementById("milkSection").style.display = "none";
+        document.getElementById("producingMilk").value = "no";
+      }
+    }
+
+    function toggleMilkInput() {
+      const producingMilk = document.getElementById("producingMilk").value;
+      document.getElementById("milkSection").style.display = producingMilk === "yes" ? "block" : "none";
+    }
+
+    function toggleTMR() {
+      const tmr = document.getElementById("tmr").value;
+      document.getElementById("tmrSection").style.display = tmr === "yes" ? "block" : "none";
+    }
 
     function calculate() {
-      const animal = document.getElementById("animal").value;
       const weight = parseFloat(document.getElementById("weight").value);
-      const milk = parseFloat(document.getElementById("milk").value);
-      const feedType = document.getElementById("feedType").value;
-      const feedAmount = parseFloat(document.getElementById("feedAmount").value);
+      const milk = parseFloat(document.getElementById("milk").value) || 0;
+      const gender = document.getElementById("gender").value;
+      const producingMilk = document.getElementById("producingMilk").value === "yes";
+      const tmr = document.getElementById("tmr").value === "yes";
 
-      // احتياجات تقديرية مبنية على NRC (تقريبية):
-      const meReq = 0.08 * Math.pow(weight, 0.75) + milk * 0.7;  // طاقة
-      const cpReq = 1.2 + milk * 0.09;  // بروتين خام (كجم)
+      // تقدير الاحتياج للبروتين والطاقة (تقريبي - يحتاج تحديث حسب الجداول الفعلية)
+      let meReq = 0.08 * Math.pow(weight, 0.75); // طاقة للصيانة
+      let cpReq = 1.2; // كجم بروتين للصيانة
 
-      const feed = feedData[feedType];
-      const totalME = feed.ME * feedAmount;
-      const totalCP = (feed.CP / 100) * feedAmount;
+      if (gender === "female" && producingMilk && milk > 0) {
+        meReq += milk * 0.7; // طاقة للحليب
+        cpReq += milk * 0.09; // بروتين للحليب
+      }
 
-      document.getElementById("result").innerHTML = `
-        <p>💡 الاحتياج اليومي للطاقة (ME): <strong>${meReq.toFixed(2)} Mcal</strong></p>
-        <p>💡 الاحتياج اليومي للبروتين الخام (CP): <strong>${cpReq.toFixed(2)} كجم</strong></p>
-        <p>🌾 ما توفره العليقة:</p>
-        <p>🔹 طاقة: ${totalME.toFixed(2)} Mcal (${((totalME / meReq) * 100).toFixed(1)}%)</p>
-        <p>🔹 بروتين: ${totalCP.toFixed(2)} كجم (${((totalCP / cpReq) * 100).toFixed(1)}%)</p>
-      `;
+      let output = `💡 الاحتياج اليومي:
+• الطاقة: ${meReq.toFixed(2)} Mcal
+• البروتين: ${cpReq.toFixed(2)} كجم بروتين خام\n`;
+
+      if (tmr) {
+        // حساب عليقة TMR تقديرية بناءً على مواد علفية بسيطة
+        const tmrMix = {
+          "سيلاج": 0.4,
+          "دريس": 0.2,
+          "بلح": 0.1,
+          "علف مركز": 0.3
+        };
+
+        const totalFeed = (meReq / 2.6).toFixed(2); // يفترض متوسط 2.6 Mcal/kg عليقة
+
+        output += `\n🍽️ اقتراح عليقة TMR (${totalFeed} كجم/يوم):\n`;
+        for (const item in tmrMix) {
+          output += `- ${item}: ${(tmrMix[item] * totalFeed).toFixed(2)} كجم\n`;
+        }
+      }
+
+      document.getElementById("result").innerText = output;
     }
+
+    updateUI();
   </script>
 
 </body>
